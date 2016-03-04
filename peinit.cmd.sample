@@ -1,0 +1,22 @@
+set FOREMANHOST=${FOREMANHOST}
+set STAGINGROOT=%SYSTEMDRIVE%\staging
+
+echo Initialising WinPE..
+wpeinit
+
+:pingtest
+ping -n 1 %FOREMANHOST% > NUL
+
+if %ERRORLEVEL% == 0 goto pingokay
+echo Retrying networking and waiting..
+ipconfig /renew
+ping -n 5 127.0.0.1 > NUL
+goto pingtest
+
+:pingokay
+echo Foreman host responded!
+
+echo Downloading pesetup.cmd..
+%STAGINGROOT%\wget64.exe https://%FOREMANHOST%/unattended/script -O %STAGINGROOT%\pesetup.cmd --no-check-certificate
+
+call %STAGINGROOT%\pesetup.cmd

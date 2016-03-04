@@ -1,0 +1,27 @@
+Intro:
+
+A basic set of scripts for preparing a bootable WinPE environment from a Windows ISO, and provisioning via Foreman. This will allow you to create and provision a Windows machine without the requirement of an existing Windows machine running Windows AIK/ADK for prepping.
+
+Requirements:
+
+wimlib (mkwinpeimg)
+Foreman 1.10.1
+
+Usage:
+
+Prepping a bootable WinPE environment:
+
+1. Place a Windows ISO in the iso/ directory
+2. Place a copy of the wimboot executable in the root of this directory
+3. Place a copy of wget64.exe in the overlay/staging/ directory
+4. Run ./prepwinpe.sh iso/$ISOFILE $FOREMANHOST.  This will prepare the needed boot files and scripts to bootstrap a Windows install from the Foreman host
+5. Sync the contents of staging/ into a directory on a web server.  This will be used as the Foreman Installation Media
+
+Configuring Foreman:
+
+1. Within Foreman, import the PXELinux, Provision, PESetup and Finish templates in wim-templates/
+2. Add new Installation Media, referencing the root directory where files were previously synced to as per Step 5 in the Prepping section
+3. Create a new Windows OS, referencing the Installation Media and link to the imported templates.  Ensure the Root Password Hash is set to Base64
+4. Create a new host, selecting the newly created Windows OS.  Make sure you specify the wimImageName parameter.  To find this, run wimlib-imagex info staging/sources/install.wim
+
+You should now be able to boot the targeted machine and automatically provision Windows.  The resulting installation will then check in to the Puppet master.

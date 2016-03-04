@@ -1,0 +1,10 @@
+@echo off
+SET FINISHDIR=C:\Finish
+SET WGET=%FINISHDIR%\wget64.exe
+
+echo Installing Puppet Agent..
+%WGET% --no-check-certificate https://downloads.puppetlabs.com/windows/puppet-3.8.6-x64.msi -O %FINISHDIR%\puppet.msi
+start /wait "" msiexec /qn /norestart /i %FINISHDIR%\puppet.msi PUPPET_MASTER_SERVER=<%= @host.puppetmaster %>
+
+echo Informing Foreman of build completion..
+%WGET% <%= foreman_url('built') %>

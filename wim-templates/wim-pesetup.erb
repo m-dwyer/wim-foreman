@@ -1,0 +1,47 @@
+<%#
+kind: script
+name: WIM PESetup
+oses:
+- Windows Server 2012 R2
+- Windows
+%>
+@echo off
+set STAGING=X:\staging
+set WGET=%STAGING%\wget64.exe
+
+echo Partitioning disk..
+<%= @host.diskLayout %>
+
+echo Downloading install.wim..
+%WGET% <%= @host.os.medium_uri(@host).to_s %>/sources/install.wim -O C:\install.wim --no-check-certificate
+
+echo Applying install.wim..
+dism.exe /Apply-Image /ImageFile:C:\install.wim /name:"<%= @host.params['wimImageName'] %>" /ApplyDir:C:\
+
+echo Deleting install.wim
+del /s /q C:\install.wim
+
+echo Applying master boot code..
+bootsect.exe /nt60 C:
+C:\Windows\System32\bcdboot C:\Windows /l en-US
+
+echo Downloading unattend.xml..
+SET UNATTENDDIR=C:\Windows\Panther
+MKDIR %UNATTENDDIR%
+%WGET% <%= foreman_url('provision') %> -O %UNATTENDDIR%\unattend.xml
+
+SET SCRATCHDIR=C:\MININT\Scratch
+mkdir %SCRATCHDIR%
+
+echo Applying unattend.xml..
+dism /Apply-Unattend:%UNATTENDDIR%\unattend.xml /Image:C:\ /ScratchDir:%SCRATCHDIR%
+rmdir /s /q %SCRATCHDIR%
+
+SET FINISHDIR=C:\Finish
+mkdir %FINISHDIR%
+copy %WGET% %FINISHDIR%
+
+echo Downloading finish script..
+%WGET% <%= foreman_url('finish') %> -O %FINISHDIR%\finish.cmd
+if not exist C:\Windows\Setup\Scripts (mkdir C:\Windows\Setup\Scripts)
+echo call %FINISHDIR%\finish.cmd > C:\Windows\Setup\Scripts\SetupComplete.cmd
